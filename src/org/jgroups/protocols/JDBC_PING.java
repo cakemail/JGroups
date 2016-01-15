@@ -7,6 +7,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Responses;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.UUID;
@@ -103,6 +104,10 @@ public class JDBC_PING extends Discovery {
     @Property(description="Removes the table contents a view change. Enabling this can help removing crashed members " +
       "that are still in the table, but generates more DB traffic")
     protected boolean clear_table_on_view_change=false;
+    
+    
+    @Property(description = "The Advertised ip address")
+    protected String advertised_ip_address;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
@@ -189,6 +194,16 @@ public class JDBC_PING extends Discovery {
     /** Write my own UUID,logical name and physical address to a file */
     protected void writeOwnInformation(boolean overwrite) {
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+        
+        if(advertised_ip_address != null) {
+        	log.info("Advertised ip address : "+advertised_ip_address);
+        	try {
+				physical_addr = new IpAddress(advertised_ip_address);
+			} catch (Exception e) {
+				log.error(e.getMessage(),e);
+			}
+        }
+        
         PingData data=new PingData(local_addr, is_server, UUID.get(local_addr), physical_addr).coord(is_coord);
         writeToDB(data, cluster_name, overwrite); // write my own data to file
     }
